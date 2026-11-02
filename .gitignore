@@ -18,9 +18,7 @@ __pycache__/
 *$py.class
 
 # Database
-*.db
 *.db-journal
-prisma/*.db
 prisma/*.db-journal
 
 # Binaries & large files

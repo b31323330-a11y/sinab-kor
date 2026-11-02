@@ -30,6 +30,32 @@ Founder muvaffaqiyat ko’rsatkichi: **30 kun ichida 20 ta oldindan buyurtma va 
 
 ---
 
+## ☁️ Vercel orqali Internetga bepul joylash (Deploy to Vercel)
+
+Loyiha Vercel platformasiga 100% moslashtirilgan (Next.js App Router + Prisma + Gemini AI API).
+
+### 1-qadam: Vercel hisobiga kirish
+1. [vercel.com](https://vercel.com) saytiga kiring va **Continue with GitHub** orqali kiring.
+
+### 2-qadam: Loyihani import qilish
+1. Vercel boshqaruv panelida **«Add New...»** tugmasini va keyin **«Project»** ni bosing.
+2. Ro’yxatdan `sinab-kor` (yoki `b31323330-a11y/sinab-kor`) repozitoriyasini topib, **«Import»** tugmasini bosing.
+
+### 3-qadam: Environment Variables (Muhit o'zgaruvchilari)ni kiritish
+«Environment Variables» bo’limini oching va quyidagi 3 ta parametrni kiriting:
+
+| Name (Nomi) | Value (Qiymati) | Izoh |
+|---|---|---|
+| `DATABASE_URL` | `file:./dev.db` | Ichki SQLite ma'lumotlar bazasi |
+| `ADMIN_PASSWORD` | `sinabkor2026admin` | Admin panel uchun maxfiy parol |
+| `GEMINI_API_KEY` | *(Sizning Gemini API kalitingiz)* | Google AI Maslahatchisi uchun |
+
+### 4-qadam: Joylash (Deploy)
+1. **«Deploy»** tugmasini bosing.
+2. 1-2 daqiqa ichida saytingiz global internetda ishga tushadi va sizga `https://sinab-kor.vercel.app` (yoki shunga o'xshash) bepul havola beriladi!
+
+---
+
 ## 🛠 O’rnatish va ishga tushirish (Local Setup)
 
 ### 1. Loyihani GitHub'dan yuklab olish (Clone)

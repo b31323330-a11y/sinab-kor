@@ -14,6 +14,7 @@ export function Navbar() {
     { href: "/", label: uz.nav.home },
     { href: "/kits", label: uz.nav.kits },
     { href: "/test", label: uz.nav.quiz },
+    { href: "/ai-mentor", label: "✨ AI Maslahatchi" },
     { href: "/admin", label: uz.nav.admin },
   ];
 
