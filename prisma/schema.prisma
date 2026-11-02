@@ -1,0 +1,48 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Kit {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  contents  String
+  dayPlan   String
+  priceMin  Int
+  priceMax  Int
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  kitId     String
+  kit       Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  city      String?
+  age       Int?
+  forWhom   String   @default("SELF") // "SELF" | "CHILD"
+  status    String   @default("PENDING") // "PENDING" | "CONTACTED" | "CONFIRMED" | "DELIVERED" | "CANCELLED"
+  createdAt DateTime @default(now())
+}
+
+model QuizResult {
+  id         String   @id @default(cuid())
+  scores     String
+  topKitSlug String
+  createdAt  DateTime @default(now())
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String?
+  phone     String
+  source    String
+  createdAt DateTime @default(now())
+}
