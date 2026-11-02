@@ -32,42 +32,60 @@ Founder muvaffaqiyat ko’rsatkichi: **30 kun ichida 20 ta oldindan buyurtma va 
 
 ## 🛠 O’rnatish va ishga tushirish (Local Setup)
 
-### 1. Loyiha papkasiga o’tish
+### 1. Loyihani GitHub'dan yuklab olish (Clone)
 ```bash
-cd C:\Users\User\.gemini\antigravity\scratch\sinab-kor
+git clone https://github.com/b31323330-a11y/sinab-kor.git
+cd sinab-kor
 ```
+*(Yoki GitHub sahifasidagi **Code -> Download ZIP** tugmasi orqali yuklab olib, arxivdan chiqaring).*
 
-### 2. Bog’liqliklarni o’rnatish
+### 2. Sozlamalar fayli (`.env`)ni yaratish
+`.env.example` faylidan nusxa olib `.env` nomli fayl yarating:
 ```bash
-npm install
+copy .env.example .env
 ```
-
-### 3. Muhit o’zgaruvchilarini (`.env`) sozlash
 `.env` faylida quyidagi parametrlar mavjud:
 ```env
 DATABASE_URL="file:./dev.db"
 ADMIN_PASSWORD="sinabkor2026admin"
+GEMINI_API_KEY="SIZNING_GEMINI_API_KALITINGIZ"
 ```
-*Founder uchun admin parolini o’zgartirish uchun `ADMIN_PASSWORD` qiymatini yangilang.*
+*(Founder uchun admin paroli va Google Gemini AI kaliti shu yerda saqlanadi).*
 
-### 4. Ma’lumotlar bazasini yaratish va to’ldirish (Seed)
+---
+
+### 3. Tezkor ishga tushirish (Python – eng oson usul)
+
+Windows tizimida loyihani ishga tushirish uchun papka ichidagi **`ishga_tushirish.bat`** faylini ikki marta bosing (double-click).
+
+Yoki terminal orqali:
 ```bash
+python main.py
+```
+Veb-server darhol ishga tushadi va brauzeringizda quyidagi manzillar ochiladi:
+* **Asosiy sayt:** [http://localhost:3005](http://localhost:3005)
+* **✨ AI Maslahatchi:** [http://localhost:3005/ai-mentor](http://localhost:3005/ai-mentor)
+* **Admin paneli:** [http://localhost:3005/admin](http://localhost:3005/admin) *(Parol: `sinabkor2026admin`)*
+
+---
+
+### 4. Next.js (Node.js) orqali ishga tushirish (Ixtiyoriy)
+
+Agar Next.js freymvorki orqali ishga tushirmoqchi bo'lsangiz:
+```bash
+npm install
 npx prisma db push
 npm run prisma:seed
-```
-
-### 5. Loyihani ishlab chiqish rejimida ishga tushirish
-```bash
 npm run dev
 ```
 
-Brauzerda [http://localhost:3005](http://localhost:3005) manzilini oching.
+---
 
-### 6. Ishlab chiqarish (Production) uchun build qilish
-```bash
-npm run build
-npm run start
-```
+### 🌍 Internet va mobil telefonlar uchun (Cloudflare Tunnel)
+Agar loyihani butun dunyo yoki telefoningizdan sinab ko'rmoqchi bo'lsangiz:
+1. `cloudflared.exe` utilitasini loyiha papkasiga joylang;
+2. `internetga_ulash.bat` faylini ishga tushiring;
+3. Ekranda barcha qurilmalar uchun ochiq onlayn havola hosil bo'ladi.
 
 ---
 
