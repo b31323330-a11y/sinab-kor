@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function AuthPage() {
-  const router = useRouter();
   const [tab, setTab] = useState<"login" | "register">("login");
 
   // Login form
@@ -26,7 +24,17 @@ export default function AuthPage() {
   const [accountNotFound, setAccountNotFound] = useState(false);
 
   useEffect(() => {
-    // Agar oldin ro'yxatdan o'tgan bo'lsa, maydonni avtomatik to'ldirish
+    // 1. Agar foydalanuvchi allaqachon tizimga kirgan bo'lsa, avtomatik kabinetga yo'naltirish
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.user) {
+          window.location.href = "/cabinet";
+        }
+      })
+      .catch(() => {});
+
+    // 2. Agar oldin ro'yxatdan o'tgan bo'lsa, maydonni avtomatik to'ldirish
     try {
       const saved = localStorage.getItem("sinabkor_user");
       if (saved) {
@@ -80,8 +88,8 @@ export default function AuthPage() {
             );
           } catch {}
         }
-        router.push("/cabinet");
-        router.refresh();
+        // Brauzer kuki va sessiyasini to'liq yuklash uchun window.location.href
+        window.location.href = "/cabinet";
       } else {
         setError(data.error || "Tizimga kirishda xatolik yuz berdi");
         if (data.not_found) {
@@ -126,8 +134,7 @@ export default function AuthPage() {
             );
           } catch {}
         }
-        router.push("/cabinet");
-        router.refresh();
+        window.location.href = "/cabinet";
       } else {
         setError(data.error || "Ro'yxatdan o'tishda xatolik yuz berdi");
       }
@@ -235,7 +242,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={switchToRegisterWithIdentifier}
-                    className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg transition-colors mt-1"
+                    className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg transition-colors mt-1 cursor-pointer"
                   >
                     Ushbu ma&apos;lumotlar bilan ro&apos;yxatdan o&apos;tish →
                   </button>

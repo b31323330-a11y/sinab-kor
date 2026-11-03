@@ -13,54 +13,97 @@ export const dynamic = "force-dynamic";
 export default async function CabinetPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("user_token")?.value;
+  const profileCookie = cookieStore.get("user_profile")?.value;
 
-  if (!token) {
+  let user: any = null;
+
+  // 1. Agar token bo'lsa, bazadan sessiya orqali tekshirish
+  if (token) {
+    try {
+      const session = await prisma.userSession.findUnique({
+        where: { token },
+        include: { user: true },
+      });
+      if (session && session.user) {
+        user = session.user;
+      }
+    } catch (err) {
+      console.warn("Error finding user session:", err);
+    }
+  }
+
+  // 2. Agar bazadan topilmasa (Vercel serverless cold start), profileCookie dan tiklash
+  if (!user && profileCookie) {
+    try {
+      const parsed = JSON.parse(Buffer.from(profileCookie, "base64").toString("utf-8"));
+      if (parsed && (parsed.name || parsed.phone)) {
+        user = parsed;
+        // Ushbu serverless konteyner bazasiga foydalanuvchini va sessiyani qayta kiritib qo'yish
+        try {
+          const fallbackPhone = parsed.phone || `temp_${parsed.id || Date.now()}`;
+          await prisma.user.upsert({
+            where: { phone: fallbackPhone },
+            update: {},
+            create: {
+              id: parsed.id || `usr_${Date.now()}`,
+              name: parsed.name,
+              phone: fallbackPhone,
+              password: "saved_session",
+              city: parsed.city || null,
+              age: parsed.age ? parseInt(String(parsed.age)) : null,
+            },
+          });
+          if (token) {
+            await prisma.userSession.upsert({
+              where: { token },
+              update: {},
+              create: {
+                token,
+                userId: parsed.id || `usr_${Date.now()}`,
+              },
+            });
+          }
+        } catch {}
+      }
+    } catch (e) {
+      console.warn("Error parsing profile cookie:", e);
+    }
+  }
+
+  // 3. Agar hech qanday sessiya ma'lumoti topilmasa, shundagina login ga yo'naltirish
+  if (!user) {
     redirect("/login");
   }
-
-  let session: any = null;
-  try {
-    session = await prisma.userSession.findUnique({
-      where: { token },
-      include: { user: true },
-    });
-  } catch (err) {
-    console.error("Error finding user session:", err);
-  }
-
-  if (!session || !session.user) {
-    redirect("/login");
-  }
-
-  const user = session.user;
 
   let orders: any[] = [];
   let psyResults: any[] = [];
 
   try {
-    const rawDigits = user.phone.replace(/[^\d]/g, "").trim();
+    const rawDigits = (user.phone || "").replace(/[^\d]/g, "").trim();
     const searchPhone = rawDigits.length >= 9 ? rawDigits.slice(-9) : rawDigits;
 
-    orders = await prisma.order.findMany({
-      where: {
-        phone: {
-          contains: searchPhone,
+    if (searchPhone) {
+      orders = await prisma.order.findMany({
+        where: {
+          phone: {
+            contains: searchPhone,
+          },
         },
-      },
-      include: { kit: true },
-      orderBy: { createdAt: "desc" },
-    });
+        include: { kit: true },
+        orderBy: { createdAt: "desc" },
+      });
 
-    psyResults = await prisma.psychologyTestResult.findMany({
-      where: {
-        parentPhone: {
-          contains: searchPhone,
+      psyResults = await prisma.psychologyTestResult.findMany({
+        where: {
+          parentPhone: {
+            contains: searchPhone,
+          },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      });
+    }
   } catch (err) {
-    console.error("Error loading cabinet data:", err);
+    console.warn("Error loading cabinet data:", err);
   }
 
   return (
@@ -69,11 +112,11 @@ export default async function CabinetPage() {
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-400 text-white flex items-center justify-center text-3xl font-black shadow-md shadow-amber-500/20">
-            {user.name.charAt(0).toUpperCase()}
+            {(user.name || "U").charAt(0).toUpperCase()}
           </div>
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900">{user.name}</h1>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">{user.phone}</p>
+            <p className="text-xs text-slate-500 font-mono mt-0.5">{user.phone || ""}</p>
             <div className="flex items-center gap-3 text-xs text-slate-500 mt-2 font-medium">
               {user.city && <span>📍 {user.city}</span>}
               {user.age && <span>🎂 {user.age} yosh</span>}
