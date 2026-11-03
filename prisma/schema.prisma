@@ -46,3 +46,40 @@ model Lead {
   source    String
   createdAt DateTime @default(now())
 }
+
+model User {
+  id        String        @id @default(cuid())
+  phone     String        @unique
+  name      String
+  password  String
+  city      String?
+  age       Int?
+  createdAt DateTime      @default(now())
+  sessions  UserSession[]
+}
+
+model UserSession {
+  token     String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model PsychologyTestResult {
+  id              String   @id @default(cuid())
+  teenName        String
+  teenAge         Int?
+  parentPhone     String
+  parentName      String?
+  testId          String
+  testTitle       String
+  totalScore      Int
+  maxScore        Int
+  riskLevel       String
+  statusTitle     String
+  statusColor     String
+  summary         String
+  recommendations String
+  answersJson     String
+  createdAt       DateTime @default(now())
+}

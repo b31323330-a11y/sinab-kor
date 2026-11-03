@@ -47,6 +47,26 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/ai-mentor" className="hover:text-amber-400 font-semibold transition-colors">
+                  ✨ AI Maslahatchi
+                </Link>
+              </li>
+              <li>
+                <Link href="/psy-tests" className="hover:text-amber-400 transition-colors">
+                  🧠 Psixologik testlar
+                </Link>
+              </li>
+              <li>
+                <Link href="/parents" className="hover:text-amber-400 transition-colors">
+                  👨‍👩‍👧 Ota-onalar
+                </Link>
+              </li>
+              <li>
+                <Link href="/cabinet" className="hover:text-amber-400 transition-colors">
+                  👤 Shaxsiy kabinet
+                </Link>
+              </li>
+              <li>
                 <Link href="/admin" className="hover:text-amber-400 transition-colors">
                   {uz.nav.admin}
                 </Link>

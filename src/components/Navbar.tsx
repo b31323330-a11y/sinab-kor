@@ -2,19 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { uz } from "@/content/uz";
 import { BoxIcon } from "./Icons";
+
+interface UserInfo {
+  id: string;
+  name: string;
+  phone: string;
+}
 
 export function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<UserInfo | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      })
+      .catch(() => setUser(null));
+  }, [pathname]);
 
   const navLinks = [
     { href: "/", label: uz.nav.home },
     { href: "/kits", label: uz.nav.kits },
     { href: "/test", label: uz.nav.quiz },
     { href: "/ai-mentor", label: "✨ AI Maslahatchi" },
+    { href: "/psy-tests", label: "🧠 Psixologik testlar" },
+    { href: "/parents", label: "👨‍👩‍👧 Ota-onalar" },
     { href: "/admin", label: uz.nav.admin },
   ];
 
@@ -24,13 +46,13 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-amber-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-amber-100 shadow-2xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 group transition-transform active:scale-95"
+            className="flex items-center gap-2 group transition-transform active:scale-95 shrink-0"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-400 flex items-center justify-center text-white shadow-md shadow-amber-500/20 group-hover:shadow-amber-500/35 transition-all">
               <BoxIcon className="w-5 h-5" />
@@ -46,16 +68,16 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
               const active = isActive(link.href);
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     active
-                      ? "text-amber-800 bg-amber-50 font-semibold"
+                      ? "text-amber-900 bg-amber-50"
                       : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
                   }`}
                 >
@@ -65,18 +87,35 @@ export function Navbar() {
             })}
           </nav>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* User Auth & CTA */}
+          <div className="hidden sm:flex items-center gap-2.5">
+            {user ? (
+              <Link
+                href="/cabinet"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold rounded-xl transition-all"
+              >
+                <span>👤</span>
+                <span className="max-w-[100px] truncate">{user.name}</span>
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="px-3 py-1.5 text-xs font-bold text-stone-700 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition-colors"
+              >
+                Kirish / Ro&apos;yxat
+              </Link>
+            )}
+
             <Link
               href="/kits"
-              className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-xl shadow-sm shadow-orange-500/25 transition-all active:scale-95"
+              className="px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 rounded-xl shadow-sm transition-all active:scale-95"
             >
-              {uz.nav.orderCta}
+              To&apos;plamlar →
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center">
+          <div className="flex lg:hidden items-center">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -112,7 +151,7 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-amber-100 bg-white px-4 pt-2 pb-5 space-y-2">
+        <div className="lg:hidden border-b border-amber-100 bg-white px-4 pt-2 pb-5 space-y-2">
           {navLinks.map((link) => {
             const active = isActive(link.href);
             return (
@@ -120,9 +159,9 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2.5 rounded-lg text-base font-medium ${
+                className={`block px-3 py-2 rounded-lg text-sm font-semibold ${
                   active
-                    ? "text-amber-800 bg-amber-50 font-semibold"
+                    ? "text-amber-800 bg-amber-50"
                     : "text-stone-700 hover:bg-stone-50"
                 }`}
               >
@@ -130,13 +169,32 @@ export function Navbar() {
               </Link>
             );
           })}
-          <div className="pt-2">
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+            {user ? (
+              <Link
+                href="/cabinet"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 text-center py-2 text-xs font-bold bg-amber-50 text-amber-900 rounded-xl"
+              >
+                👤 {user.name} (Kabinet)
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 text-center py-2 text-xs font-bold bg-slate-100 text-slate-800 rounded-xl"
+              >
+                Kirish / Ro&apos;yxatdan o&apos;tish
+              </Link>
+            )}
+
             <Link
               href="/kits"
               onClick={() => setMobileMenuOpen(false)}
-              className="block w-full text-center py-2.5 text-base font-bold text-white bg-gradient-to-r from-amber-600 to-orange-500 rounded-xl shadow-sm"
+              className="flex-1 text-center py-2 text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-orange-500 rounded-xl shadow-sm"
             >
-              {uz.nav.orderCta}
+              To&apos;plam tanlash
             </Link>
           </div>
         </div>
@@ -144,4 +202,3 @@ export function Navbar() {
     </header>
   );
 }
-
