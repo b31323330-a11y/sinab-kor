@@ -5,3 +5,4 @@ export async function POST() {
   res.cookies.delete("parent_phone");
   return res;
 }
+

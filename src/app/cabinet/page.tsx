@@ -8,6 +8,8 @@ export const metadata = {
   title: "Shaxsiy kabinet | Sinab ko'r",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function CabinetPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("user_token")?.value;
@@ -16,10 +18,15 @@ export default async function CabinetPage() {
     redirect("/login");
   }
 
-  const session = await prisma.userSession.findUnique({
-    where: { token },
-    include: { user: true },
-  });
+  let session: any = null;
+  try {
+    session = await prisma.userSession.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+  } catch (err) {
+    console.error("Error finding user session:", err);
+  }
 
   if (!session || !session.user) {
     redirect("/login");
@@ -27,27 +34,34 @@ export default async function CabinetPage() {
 
   const user = session.user;
 
-  // Fetch orders by phone
-  const cleanPhone = user.phone.replace(/[^\d+]/g, "").trim();
-  const orders = await prisma.order.findMany({
-    where: {
-      phone: {
-        contains: cleanPhone.replace("+", ""),
-      },
-    },
-    include: { kit: true },
-    orderBy: { createdAt: "desc" },
-  });
+  let orders: any[] = [];
+  let psyResults: any[] = [];
 
-  // Fetch psy results by phone
-  const psyResults = await prisma.psychologyTestResult.findMany({
-    where: {
-      parentPhone: {
-        contains: cleanPhone.replace("+", ""),
+  try {
+    const rawDigits = user.phone.replace(/[^\d]/g, "").trim();
+    const searchPhone = rawDigits.length >= 9 ? rawDigits.slice(-9) : rawDigits;
+
+    orders = await prisma.order.findMany({
+      where: {
+        phone: {
+          contains: searchPhone,
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      include: { kit: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    psyResults = await prisma.psychologyTestResult.findMany({
+      where: {
+        parentPhone: {
+          contains: searchPhone,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (err) {
+    console.error("Error loading cabinet data:", err);
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 md:py-16 space-y-8">

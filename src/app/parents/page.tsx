@@ -12,6 +12,8 @@ export const metadata = {
   description: "Farzandingiz yechgan psixologik testlar, ruhiy holat va bolalar psixologi tavsiyalari.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ParentsPage() {
   const cookieStore = await cookies();
   const parentPhone = cookieStore.get("parent_phone")?.value;
@@ -24,15 +26,24 @@ export default async function ParentsPage() {
     );
   }
 
-  // Fetch results for this parent's phone
-  const results = await prisma.psychologyTestResult.findMany({
-    where: {
-      parentPhone: {
-        contains: parentPhone.replace("+", ""),
+  // Fetch results for this parent's phone safely
+  let results: any[] = [];
+  try {
+    const rawDigits = parentPhone.replace(/[^\d]/g, "");
+    const searchPhone = rawDigits.length >= 9 ? rawDigits.slice(-9) : rawDigits;
+
+    results = await prisma.psychologyTestResult.findMany({
+      where: {
+        parentPhone: {
+          contains: searchPhone,
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (error) {
+    console.error("Error loading parent results:", error);
+    results = [];
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 md:py-16">

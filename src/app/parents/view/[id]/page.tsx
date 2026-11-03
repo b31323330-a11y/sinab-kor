@@ -2,15 +2,23 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function ParentViewResultPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = await params;
-  const result = await prisma.psychologyTestResult.findUnique({
-    where: { id: resolvedParams.id },
-  });
+  let result: any = null;
+
+  try {
+    result = await prisma.psychologyTestResult.findUnique({
+      where: { id: resolvedParams.id },
+    });
+  } catch (err) {
+    console.error("Error finding result:", err);
+  }
 
   if (!result) {
     notFound();
