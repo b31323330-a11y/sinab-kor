@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { uz } from "@/content/uz";
 import { prisma } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { PreorderForm } from "@/components/PreorderForm";
+import { DEFAULT_KITS_DATA } from "@/data/defaultKits";
 import {
   ChefIcon,
   CodeIcon,
@@ -31,148 +33,14 @@ const fallbackKitsData: Record<
     priceMin: number;
     priceMax: number;
   }
-> = {
-  oshpaz: {
-    id: "kit-oshpaz",
-    slug: "oshpaz",
-    title: "Oshpaz bo’lib ko’r",
-    contents: "Pichoq, taxta, retsept kartalari",
-    dayPlan: JSON.stringify([
-      {
-        day: "1-kun: Asoslar",
-        title: "Pichoq bilan xavfsiz ishlash va to’g’rash texnikasi",
-        description:
-          "Professional oshpaz pichog’ini to’g’ri ushlash, sabzavotlarni julienne va brunoise usulida to’g’rash, oshxona gigiyenasi.",
-      },
-      {
-        day: "2-kun: Amaliy ish",
-        title: "Ta’mlar balansi va klassik sous tayyorlash",
-        description:
-          "Ziravorlar va o’tlar bilan ishlash, ta’mlarni uyg’unlashtirish hamda universal oshpazlik sousini noldan pishirish.",
-      },
-      {
-        day: "3-kun: Mini-loyiha",
-        title: "Oilaviy mualliflik taomi va servis",
-        description:
-          "Maxsus retsept kartasi asosida to’liq issiq taom pishirish, chiroyli dasturxonga tortish va oila a’zolari bahosini olish.",
-      },
-    ]),
-    priceMin: 60000,
-    priceMax: 80000,
-  },
-  dasturchi: {
-    id: "kit-dasturchi",
-    slug: "dasturchi",
-    title: "Dasturchi bo’lib ko’r",
-    contents: "Mantiq kartalari, onlayn mashq",
-    dayPlan: JSON.stringify([
-      {
-        day: "1-kun: Asoslar",
-        title: "Algoritmik tafakkur va mantiqiy bloklar",
-        description:
-          "Mantiq kartalari orqali shartlar, sikllar va o’zgaruvchilar tushunchasini kompyutersiz tushunish va qadamma-qadam yechish.",
-      },
-      {
-        day: "2-kun: Amaliy ish",
-        title: "Onlayn mashqlar va birinchi kod qatorlari",
-        description:
-          "Maxsus interaktiv platformada sodda topshiriqlarni bajarish, xatolarni (bug) topish va to’g’rilash amaliyoti.",
-      },
-      {
-        day: "3-kun: Mini-loyiha",
-        title: "O’z mini veb-sahifangiz yoki viktorina o’yini",
-        description:
-          "3 kunlik bilimlarni jamlab, do’stlaringiz bilan ulashish mumkin bo’lgan birinchi interaktiv mini-dasturni yaratish.",
-      },
-    ]),
-    priceMin: 30000,
-    priceMax: 40000,
-  },
-  fotograf: {
-    id: "kit-fotograf",
-    slug: "fotograf",
-    title: "Fotograf bo’lib ko’r",
-    contents: "Telefon linzasi, shtativ",
-    dayPlan: JSON.stringify([
-      {
-        day: "1-kun: Asoslar",
-        title: "Kadr kompozitsiyasi va yorug’lik qoidalari",
-        description:
-          "«Uchdan bir» qoidasi, tabiiy yorug’lik manbalari va smartfonga qo’shimcha linzani to’g’ri o’rnatib sinash.",
-      },
-      {
-        day: "2-kun: Amaliy ish",
-        title: "Makro va portret suratga olish",
-        description:
-          "Shtativ yordamida tebranmasdan suratga olish, kichik detallarni kattalashtirish va inson portretida his-tuyg’uni aks ettirish.",
-      },
-      {
-        day: "3-kun: Mini-loyiha",
-        title: "3 ta kadrli foto-hikoya yaratish",
-        description:
-          "Bitta mavzuni tanlab (masalan: tonggi shahar yoki uy hayvoni) kichik foto-hikoya tayyorlash va mobil korreksiya qilish.",
-      },
-    ]),
-    priceMin: 70000,
-    priceMax: 100000,
-  },
-  dizayner: {
-    id: "kit-dizayner",
-    slug: "dizayner",
-    title: "Dizayner bo’lib ko’r",
-    contents: "Eskiz daftari, markerlar",
-    dayPlan: JSON.stringify([
-      {
-        day: "1-kun: Asoslar",
-        title: "Ranglar psixologiyasi va tipografika",
-        description:
-          "Ranglar doirasi, kontrast va shriftlar kayfiyati. Eskiz daftarida birinchi rang palitralarini markerlar bilan sinash.",
-      },
-      {
-        day: "2-kun: Amaliy ish",
-        title: "Vizual kompozitsiya va ilova ekrani eskizi",
-        description:
-          "Ommabop mobil ilova sahifasining qog’ozdagi simli modelini (wireframe) qo’lda chizish va qulaylikni tekshirish.",
-      },
-      {
-        day: "3-kun: Mini-loyiha",
-        title: "Yangi brend logotipi yoki afishasi",
-        description:
-          "O’zingiz o’ylab topgan mahsulot yoki sevimli qahramoningiz uchun to’liq vizual poster va logo dizaynini yakunlash.",
-      },
-    ]),
-    priceMin: 40000,
-    priceMax: 60000,
-  },
-  usta: {
-    id: "kit-usta",
-    slug: "usta",
-    title: "Usta bo’lib ko’r",
-    contents: "Kichik duradgorlik to’plami",
-    dayPlan: JSON.stringify([
-      {
-        day: "1-kun: Asoslar",
-        title: "Yog’och materiallari va asboblardan xavfsiz foydalanish",
-        description:
-          "Duradgorlik o’lchagichlari, zımpara (qum qog’oz) turlari va yog’och tolalarini to’g’ri yo’nalishda tekislash asoslari.",
-      },
-      {
-        day: "2-kun: Amaliy ish",
-        title: "Birlashtirish va mustahkam yig’ish usullari",
-        description:
-          "Kichik qismlarni bir-biriga kiritish, xavfsiz mixlash yoki yelimlash orqali mustahkam konstruksiya hosil qilish.",
-      },
-      {
-        day: "3-kun: Mini-loyiha",
-        title: "Smartfon uchun yog’och taglik yoki qalamdon",
-        description:
-          "Barcha qismlarni birlashtirib, o’z qo’lingiz bilan haqiqiy foydali buyum yasash va uni pardozlash.",
-      },
-    ]),
-    priceMin: 80000,
-    priceMax: 120000,
-  },
-};
+> = {};
+
+DEFAULT_KITS_DATA.forEach((k) => {
+  fallbackKitsData[k.slug] = {
+    id: `kit-${k.slug}`,
+    ...k,
+  };
+});
 
 function getKitIcon(slug: string) {
   switch (slug) {
@@ -209,8 +77,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function KitDetailPage({ params }: PageProps) {
   const { slug } = await params;
+  const isAdmin = await isAdminAuthenticated();
 
-  let kit = fallbackKitsData[slug];
+  let kit: any = fallbackKitsData[slug];
 
   try {
     const dbKit = await prisma.kit.findUnique({
@@ -252,10 +121,40 @@ export default async function KitDetailPage({ params }: PageProps) {
     ];
   }
 
-  const contentItems = kit.contents.split(",").map((item) => item.trim());
+  const contentItems = (kit.contents || "").split(",").map((item: string) => item.trim());
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Admin Mode Banner */}
+      {isAdmin && (
+        <div className="mb-6 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl p-5 text-stone-950 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-amber-400">
+          <div className="flex items-center gap-3">
+            <span className="w-10 h-10 rounded-2xl bg-white/90 text-stone-900 flex items-center justify-center text-xl shadow-xs shrink-0">
+              👑
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black uppercase tracking-wider bg-stone-950 text-white px-2 py-0.5 rounded-md">
+                  Admin boshqaruv rejimi
+                </span>
+                <span className="text-[11px] font-extrabold text-stone-950">
+                  ✓ To&apos;liq ochiq (Pullik to&apos;siqlarsiz)
+                </span>
+              </div>
+              <p className="text-xs text-stone-950 font-medium mt-1">
+                Siz administrator sifatida kirgansiz. Ushbu to&apos;plamning 3 kunlik barcha amaliy rejalari, topshiriqlari va materiallari siz uchun to&apos;liq ochiq.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin"
+            className="px-4 py-2.5 bg-stone-950 hover:bg-stone-900 text-white text-xs font-bold rounded-xl transition-all whitespace-nowrap shadow-xs"
+          >
+            ← Admin panelga qaytish
+          </Link>
+        </div>
+      )}
+
       {/* Back button */}
       <div className="mb-6">
         <Link
@@ -317,7 +216,7 @@ export default async function KitDetailPage({ params }: PageProps) {
               <span>{uz.kits.contentsTitle}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {contentItems.map((item, idx) => (
+              {contentItems.map((item: string, idx: number) => (
                 <div
                   key={idx}
                   className="bg-stone-50 rounded-xl p-3.5 border border-stone-100 flex items-center gap-3"
@@ -361,8 +260,26 @@ export default async function KitDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Right Column: Pre-order Form */}
-        <div className="lg:col-span-5 sticky top-20">
+        {/* Right Column: Pre-order Form & Admin Panel Link */}
+        <div className="lg:col-span-5 sticky top-20 space-y-4">
+          {isAdmin && (
+            <div className="bg-white p-5 rounded-3xl border border-amber-300 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs uppercase tracking-wider">
+                <span>👑</span>
+                <span>Admin Tezkor Boshqaruvi</span>
+              </div>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Siz ushbu kasb to&apos;plamini tahrirlashingiz, unga tushgan buyurtmalarni tekshirishingiz yoki yangi kasblar qo&apos;shishingiz mumkin.
+              </p>
+              <Link
+                href="/admin"
+                className="w-full py-2.5 px-4 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl text-center block transition-all shadow-xs"
+              >
+                Admin panelda boshqarish →
+              </Link>
+            </div>
+          )}
+
           <PreorderForm
             kitId={kit.id}
             kitSlug={kit.slug}
@@ -373,4 +290,3 @@ export default async function KitDetailPage({ params }: PageProps) {
     </div>
   );
 }
-

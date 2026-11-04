@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { uz } from "@/content/uz";
 import { prisma } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/auth";
+import { DEFAULT_KITS_DATA } from "@/data/defaultKits";
 import {
   ChefIcon,
   CodeIcon,
@@ -16,48 +18,10 @@ import {
 export const metadata: Metadata = {
   title: "Barcha to’plamlar",
   description:
-    "Oshpaz, dasturchi, fotograf, dizayner va usta bo’lib ko’rish uchun 5 ta boshlang’ich kasb qutisi. 3 kunlik amaliy sinov.",
+    "Oshpaz, dasturchi, fotograf, dizayner va usta bo’lib ko’rish uchun boshlang’ich kasb qutilari. 3 kunlik amaliy sinov.",
 };
 
 export const dynamic = "force-dynamic";
-
-const fallbackKits = [
-  {
-    slug: "oshpaz",
-    title: "Oshpaz bo’lib ko’r",
-    contents: "Pichoq, taxta, retsept kartalari",
-    priceMin: 60000,
-    priceMax: 80000,
-  },
-  {
-    slug: "dasturchi",
-    title: "Dasturchi bo’lib ko’r",
-    contents: "Mantiq kartalari, onlayn mashq",
-    priceMin: 30000,
-    priceMax: 40000,
-  },
-  {
-    slug: "fotograf",
-    title: "Fotograf bo’lib ko’r",
-    contents: "Telefon linzasi, shtativ",
-    priceMin: 70000,
-    priceMax: 100000,
-  },
-  {
-    slug: "dizayner",
-    title: "Dizayner bo’lib ko’r",
-    contents: "Eskiz daftari, markerlar",
-    priceMin: 40000,
-    priceMax: 60000,
-  },
-  {
-    slug: "usta",
-    title: "Usta bo’lib ko’r",
-    contents: "Kichik duradgorlik to’plami",
-    priceMin: 80000,
-    priceMax: 120000,
-  },
-];
 
 function getKitIcon(slug: string) {
   switch (slug) {
@@ -116,7 +80,9 @@ function formatPrice(val: number) {
 }
 
 export default async function KitsPage() {
-  let kits = fallbackKits;
+  const isAdmin = await isAdminAuthenticated();
+
+  let kits: any[] = DEFAULT_KITS_DATA;
   try {
     const dbKits = await prisma.kit.findMany({
       orderBy: { createdAt: "asc" },
@@ -130,6 +96,24 @@ export default async function KitsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Admin Mode Quick Banner */}
+      {isAdmin && (
+        <div className="mb-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-stone-950 shadow-sm flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">👑</span>
+            <span className="text-xs sm:text-sm font-extrabold">
+              Admin rejimi faol. Barcha kasb qutilari materiallari siz uchun to&apos;liq ochiq.
+            </span>
+          </div>
+          <Link
+            href="/admin"
+            className="px-4 py-2 bg-stone-950 text-white font-bold text-xs rounded-xl shadow-xs whitespace-nowrap hover:bg-stone-900 transition-colors"
+          >
+            + Yangi kasb qo&apos;shish →
+          </Link>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="text-center max-w-3xl mx-auto mb-12">
         <span className="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
@@ -159,99 +143,79 @@ export default async function KitsPage() {
               key={kit.slug}
               className="bg-white rounded-3xl border border-stone-200 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden group hover:-translate-y-1"
             >
-              <div className="p-6 sm:p-8">
-                {/* Header of Card */}
-                <div className="flex items-start justify-between mb-6">
-                  <div
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white bg-gradient-to-tr ${colors.gradient} shadow-md group-hover:scale-110 transition-transform`}
-                  >
-                    <Icon className="w-7 h-7" />
-                  </div>
-                  <span className="text-xs font-semibold text-stone-500 bg-stone-100 px-3 py-1 rounded-full">
-                    {uz.kits.approxNote}
-                  </span>
-                </div>
-
-                <h2 className="text-2xl font-bold text-stone-900 mb-3 group-hover:text-amber-700 transition-colors">
-                  {kit.title}
-                </h2>
-
-                {/* Contents */}
-                <div className="mb-6 bg-stone-50 p-3.5 rounded-xl border border-stone-100">
-                  <span className="text-xs font-bold uppercase tracking-wider text-stone-500 block mb-1">
-                    {uz.kits.contentsTitle}:
-                  </span>
-                  <p className="text-sm text-stone-800 font-medium">
-                    {kit.contents}
-                  </p>
-                </div>
-
-                {/* 3-day roadmap teaser */}
-                <div className="space-y-1.5 text-xs text-stone-600 mb-6">
-                  <div className="flex items-center gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span>1-kun: Soha asoslari va asboblar</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span>2-kun: Real amaliy mashg’ulot</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span>3-kun: Birinchi mustaqil mini-loyiha</span>
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="pt-4 border-t border-stone-100">
-                  <span className="text-xs text-stone-500 block mb-1">
-                    Taxminiy narxi:
-                  </span>
-                  <div className="text-xl font-black text-stone-900">
-                    {formatPrice(kit.priceMin)} – {formatPrice(kit.priceMax)}{" "}
-                    <span className="text-sm font-semibold text-stone-500">
-                      {uz.kits.priceUnit}
+              <div>
+                {/* Visual Header */}
+                <div
+                  className={`h-40 bg-gradient-to-tr ${colors.gradient} p-6 flex items-center justify-between relative overflow-hidden`}
+                >
+                  <div className="text-white z-10">
+                    <span className="text-[11px] font-bold uppercase tracking-wider opacity-90 block">
+                      3 kunlik amaliyot
                     </span>
+                    <h3 className="text-2xl font-black mt-1 leading-tight">
+                      {kit.title}
+                    </h3>
+                  </div>
+                  <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white shadow-inner z-10 shrink-0">
+                    <Icon className="w-8 h-8" />
+                  </div>
+                  <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-xs font-bold border mb-4 ${colors.badge}`}
+                  >
+                    3 kunlik sinov qutisi
+                  </span>
+
+                  <div className="space-y-3 mb-6">
+                    <div>
+                      <span className="text-xs text-stone-500 font-semibold block uppercase tracking-wider mb-1">
+                        {uz.kits.contentsTitle}:
+                      </span>
+                      <p className="text-sm text-stone-700 leading-relaxed font-medium">
+                        {kit.contents}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-stone-100 flex items-center gap-2 text-xs text-stone-500">
+                      <CheckCircleIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Maxsus topshiriqlar va video qo&apos;llanma</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div className="p-6 sm:p-8 pt-0 mt-auto">
+              {/* Price & CTA Footer */}
+              <div className="p-6 pt-0 mt-auto">
+                <div className="bg-stone-50 rounded-2xl p-4 mb-4 flex items-center justify-between border border-stone-100">
+                  <div>
+                    <span className="text-[11px] text-stone-500 block">
+                      Taxminiy narxi:
+                    </span>
+                    <span className="text-lg font-black text-stone-900">
+                      {formatPrice(kit.priceMin)} – {formatPrice(kit.priceMax)}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-stone-500">
+                    {uz.kits.priceUnit}
+                  </span>
+                </div>
+
                 <Link
                   href={`/kits/${kit.slug}`}
-                  className="w-full py-3.5 px-4 rounded-xl text-center text-sm font-bold text-white bg-stone-900 hover:bg-amber-600 transition-all flex items-center justify-center gap-2 shadow-sm group-hover:bg-gradient-to-r group-hover:from-amber-600 group-hover:to-orange-500"
+                  className="w-full py-3.5 px-4 rounded-xl bg-stone-900 hover:bg-amber-600 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm group-hover:shadow-md active:scale-98"
                 >
                   <span>{uz.kits.viewDetails}</span>
-                  <ArrowRightIcon className="w-4 h-4" />
+                  <ArrowRightIcon className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Quiz banner */}
-      <div className="mt-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-8 sm:p-10 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
-        <div>
-          <span className="text-xs font-black uppercase tracking-wider text-amber-100 block mb-1">
-            Qaysi to’plamni tanlashni bilmayapsizmi?
-          </span>
-          <h3 className="text-2xl sm:text-3xl font-black">
-            «Bu kasb menga mosmi?» testidan o’ting
-          </h3>
-          <p className="text-sm text-amber-100 mt-2 max-w-xl">
-            8 ta savolga javob berib, o’z qobiliyatingiz va qiziqishlaringizga mos to’plamni 2 daqiqada aniqlang.
-          </p>
-        </div>
-        <Link
-          href="/test"
-          className="shrink-0 px-6 py-3.5 bg-white text-stone-950 font-bold rounded-xl hover:bg-amber-100 transition-colors shadow-md text-sm"
-        >
-          Testni boshlash →
-        </Link>
-      </div>
     </div>
   );
 }
-
