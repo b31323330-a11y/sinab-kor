@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { uz } from "@/content/uz";
 import { prisma } from "@/lib/db";
-import { isAdminAuthenticated } from "@/lib/auth";
 import { PreorderForm } from "@/components/PreorderForm";
 import { DEFAULT_KITS_DATA } from "@/data/defaultKits";
 import {
@@ -77,7 +76,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function KitDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const isAdmin = await isAdminAuthenticated();
 
   let kit: any = fallbackKitsData[slug];
 
@@ -125,36 +123,6 @@ export default async function KitDetailPage({ params }: PageProps) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Admin Mode Banner */}
-      {isAdmin && (
-        <div className="mb-6 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl p-5 text-stone-950 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-amber-400">
-          <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-2xl bg-white/90 text-stone-900 flex items-center justify-center text-xl shadow-xs shrink-0">
-              👑
-            </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase tracking-wider bg-stone-950 text-white px-2 py-0.5 rounded-md">
-                  Admin boshqaruv rejimi
-                </span>
-                <span className="text-[11px] font-extrabold text-stone-950">
-                  ✓ To&apos;liq ochiq (Pullik to&apos;siqlarsiz)
-                </span>
-              </div>
-              <p className="text-xs text-stone-950 font-medium mt-1">
-                Siz administrator sifatida kirgansiz. Ushbu to&apos;plamning 3 kunlik barcha amaliy rejalari, topshiriqlari va materiallari siz uchun to&apos;liq ochiq.
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/admin"
-            className="px-4 py-2.5 bg-stone-950 hover:bg-stone-900 text-white text-xs font-bold rounded-xl transition-all whitespace-nowrap shadow-xs"
-          >
-            ← Admin panelga qaytish
-          </Link>
-        </div>
-      )}
-
       {/* Back button */}
       <div className="mb-6">
         <Link
@@ -260,26 +228,8 @@ export default async function KitDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Right Column: Pre-order Form & Admin Panel Link */}
-        <div className="lg:col-span-5 sticky top-20 space-y-4">
-          {isAdmin && (
-            <div className="bg-white p-5 rounded-3xl border border-amber-300 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs uppercase tracking-wider">
-                <span>👑</span>
-                <span>Admin Tezkor Boshqaruvi</span>
-              </div>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Siz ushbu kasb to&apos;plamini tahrirlashingiz, unga tushgan buyurtmalarni tekshirishingiz yoki yangi kasblar qo&apos;shishingiz mumkin.
-              </p>
-              <Link
-                href="/admin"
-                className="w-full py-2.5 px-4 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl text-center block transition-all shadow-xs"
-              >
-                Admin panelda boshqarish →
-              </Link>
-            </div>
-          )}
-
+        {/* Right Column: Pre-order Form */}
+        <div className="lg:col-span-5 sticky top-20">
           <PreorderForm
             kitId={kit.id}
             kitSlug={kit.slug}

@@ -144,3 +144,4 @@ export const DEFAULT_KITS_DATA: DefaultKitData[] = [
     priceMax: 120000,
   },
 ];
+

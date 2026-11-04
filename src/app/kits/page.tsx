@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { uz } from "@/content/uz";
 import { prisma } from "@/lib/db";
-import { isAdminAuthenticated } from "@/lib/auth";
 import { DEFAULT_KITS_DATA } from "@/data/defaultKits";
 import {
   ChefIcon,
@@ -80,8 +79,6 @@ function formatPrice(val: number) {
 }
 
 export default async function KitsPage() {
-  const isAdmin = await isAdminAuthenticated();
-
   let kits: any[] = DEFAULT_KITS_DATA;
   try {
     const dbKits = await prisma.kit.findMany({
@@ -96,24 +93,6 @@ export default async function KitsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      {/* Admin Mode Quick Banner */}
-      {isAdmin && (
-        <div className="mb-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-stone-950 shadow-sm flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl">👑</span>
-            <span className="text-xs sm:text-sm font-extrabold">
-              Admin rejimi faol. Barcha kasb qutilari materiallari siz uchun to&apos;liq ochiq.
-            </span>
-          </div>
-          <Link
-            href="/admin"
-            className="px-4 py-2 bg-stone-950 text-white font-bold text-xs rounded-xl shadow-xs whitespace-nowrap hover:bg-stone-900 transition-colors"
-          >
-            + Yangi kasb qo&apos;shish →
-          </Link>
-        </div>
-      )}
-
       {/* Page Header */}
       <div className="text-center max-w-3xl mx-auto mb-12">
         <span className="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
