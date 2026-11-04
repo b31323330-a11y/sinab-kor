@@ -146,3 +146,4 @@ export async function syncUserToDb(u: SyncedUser): Promise<any> {
     return null;
   }
 }
+

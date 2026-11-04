@@ -200,3 +200,37 @@ export async function updateOrderStatusEverywhere(
   }
 }
 
+// 4. Buyurtmani butunlay o'chirish (lokal + bulut)
+export async function deleteOrderEverywhere(orderId: string): Promise<void> {
+  try {
+    await prisma.order.deleteMany({
+      where: { id: orderId },
+    });
+  } catch (e) {
+    console.warn("Local DB order delete warning:", e);
+  }
+
+  try {
+    const res = await fetch(CLOUD_STORE_URL, {
+      signal: AbortSignal.timeout(4000),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const orders: SyncedOrder[] = data?.data?.orders || [];
+      const filtered = orders.filter((o) => o.id !== orderId);
+      await fetch(CLOUD_STORE_URL, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "sinabkor_global_orders_store",
+          data: { orders: filtered },
+        }),
+        signal: AbortSignal.timeout(4000),
+      });
+    }
+  } catch (e) {
+    console.warn("Cloud delete warning:", e);
+  }
+}
+

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { DEFAULT_KITS_DATA } from "@/data/defaultKits";
 import { getMergedOrders } from "@/lib/ordersSync";
+import { getCloudUsers } from "@/lib/usersSync";
 
 export const metadata: Metadata = {
   title: "Admin Panel",
@@ -28,9 +29,11 @@ export default async function AdminPage() {
   let orders: any[] = [];
   let leads: any[] = [];
   let kits: any[] = [];
+  let users: any[] = [];
+  let psyResults: any[] = [];
 
   try {
-    const [lCount, qCount, allOrders, allLeads, allKits] =
+    const [lCount, qCount, allOrders, allLeads, allKits, localUsers, allPsyResults] =
       await Promise.all([
         prisma.lead.count(),
         prisma.quizResult.count(),
@@ -49,9 +52,24 @@ export default async function AdminPage() {
           },
           orderBy: { createdAt: "asc" },
         }),
+        prisma.user.findMany({
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            city: true,
+            age: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.psychologyTestResult.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 100,
+        }),
       ]);
 
-    // Barcha konteynerlar aro buyurtmalarni sinxronlashtirish
+    // 1. Buyurtmalarni sinxronlashtirish
     const mergedOrders = await getMergedOrders(allOrders);
     orders = JSON.parse(JSON.stringify(mergedOrders));
     totalOrders = orders.length;
@@ -63,8 +81,21 @@ export default async function AdminPage() {
     quizCount = qCount;
     leads = JSON.parse(JSON.stringify(allLeads));
     kits = JSON.parse(JSON.stringify(allKits));
+    psyResults = JSON.parse(JSON.stringify(allPsyResults));
 
-    // Standart to'plamlar bazada bo'lmasa, avtomatik qo'shish
+    // 2. Foydalanuvchilarni sinxronlashtirish
+    const cloudUsers = await getCloudUsers();
+    const userMap = new Map();
+    for (const u of cloudUsers) {
+      userMap.set(u.id || u.phone, u);
+    }
+    for (const u of localUsers) {
+      userMap.set(u.id || u.phone, u);
+    }
+    users = JSON.parse(JSON.stringify(Array.from(userMap.values())));
+    users.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+    // 3. Standart to'plamlar bazada bo'lmasa, avtomatik qo'shish
     if (kits.length === 0) {
       for (const k of DEFAULT_KITS_DATA) {
         try {
@@ -94,6 +125,8 @@ export default async function AdminPage() {
     last30DaysOrders,
     leadsCount,
     quizCount,
+    totalUsers: users.length,
+    totalPsyTests: psyResults.length,
     goal: 20,
   };
 
@@ -103,6 +136,8 @@ export default async function AdminPage() {
       initialOrders={orders}
       initialLeads={leads}
       initialKits={kits}
+      initialUsers={users}
+      initialPsyResults={psyResults}
     />
   );
 }
