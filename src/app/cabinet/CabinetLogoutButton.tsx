@@ -4,11 +4,12 @@ export function CabinetLogoutButton() {
   const handleLogout = async () => {
     try {
       localStorage.removeItem("sinabkor_user");
+      sessionStorage.clear();
     } catch {}
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {}
-    window.location.href = "/";
+    window.location.href = "/login";
   };
 
   return (

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { CabinetLogoutButton } from "./CabinetLogoutButton";
+import { getMergedOrders } from "@/lib/ordersSync";
 
 export const metadata = {
   title: "Shaxsiy kabinet | Sinab ko'r",
@@ -83,14 +84,15 @@ export default async function CabinetPage() {
     const searchPhone = rawDigits.length >= 9 ? rawDigits.slice(-9) : rawDigits;
 
     if (searchPhone) {
-      orders = await prisma.order.findMany({
-        where: {
-          phone: {
-            contains: searchPhone,
-          },
-        },
+      const localOrders = await prisma.order.findMany({
         include: { kit: true },
         orderBy: { createdAt: "desc" },
+      });
+
+      const allSynced = await getMergedOrders(localOrders);
+      orders = allSynced.filter((o: any) => {
+        const oPhone = (o.phone || "").replace(/[^\d]/g, "");
+        return oPhone.includes(searchPhone);
       });
 
       psyResults = await prisma.psychologyTestResult.findMany({

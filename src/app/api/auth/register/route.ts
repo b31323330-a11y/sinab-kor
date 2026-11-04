@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
+import { saveUserToCloud, findUserInCloud, SyncedUser } from "@/lib/usersSync";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     const trimmedName = String(name).trim();
 
-    // 1. Mavjud foydalanuvchini tekshirish (telefon bo'yicha)
+    // 1. Mavjud foydalanuvchini tekshirish (telefon bo'yicha ham DB, ham bulutdan)
     let existingUser = null;
     try {
       existingUser = await prisma.user.findFirst({
@@ -52,6 +53,10 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       console.warn("DB existing user check warning:", e);
+    }
+
+    if (!existingUser) {
+      existingUser = await findUserInCloud(fullPhone);
     }
 
     if (existingUser) {
@@ -80,6 +85,18 @@ export async function POST(req: NextRequest) {
       console.warn("DB user creation warning (serverless fallback active):", e);
     }
 
+    // Bulutli bazaga ham sinxron saqlash
+    const syncedUser: SyncedUser = {
+      id: userData.id,
+      name: userData.name,
+      phone: userData.phone,
+      password: userData.password,
+      city: userData.city,
+      age: userData.age,
+      createdAt: new Date().toISOString(),
+    };
+    await saveUserToCloud(syncedUser);
+
     // 3. Sessiya yaratish
     const token = crypto.randomUUID();
     try {
@@ -106,7 +123,7 @@ export async function POST(req: NextRequest) {
       user: authProfile,
     });
 
-    // 4. Sessiya va backup kukilarni o'rnatish (Vercel serverless cold start uchun)
+    // 4. Yangi foydalanuvchi ma'lumotlarini kukiga to'liq o'rnatish
     res.cookies.set("user_token", token, {
       path: "/",
       httpOnly: true,
@@ -121,7 +138,7 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
 
-    // Telefon bo'yicha zaxira
+    // Telefon va ism bo'yicha zaxira
     res.cookies.set(`auth_acc_${last9}`, Buffer.from(JSON.stringify(userData)).toString("base64"), {
       path: "/",
       httpOnly: true,
@@ -129,7 +146,6 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
 
-    // Ism bo'yicha zaxira
     const safeName = encodeURIComponent(trimmedName.toLowerCase());
     res.cookies.set(`auth_acc_name_${safeName}`, Buffer.from(JSON.stringify(userData)).toString("base64"), {
       path: "/",

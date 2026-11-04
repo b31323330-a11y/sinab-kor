@@ -5,6 +5,7 @@ import Link from "next/link";
 
 export default function AuthPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
+  const [currentLoggedInUser, setCurrentLoggedInUser] = useState<any>(null);
 
   // Login form
   const [loginIdentifier, setLoginIdentifier] = useState("");
@@ -24,29 +25,29 @@ export default function AuthPage() {
   const [accountNotFound, setAccountNotFound] = useState(false);
 
   useEffect(() => {
-    // 1. Agar foydalanuvchi allaqachon tizimga kirgan bo'lsa, avtomatik kabinetga yo'naltirish
+    // 1. Joriy tizimga kirgan foydalanuvchini tekshirish
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => {
         if (data && data.user) {
-          window.location.href = "/cabinet";
+          setCurrentLoggedInUser(data.user);
         }
       })
       .catch(() => {});
-
-    // 2. Agar oldin ro'yxatdan o'tgan bo'lsa, maydonni avtomatik to'ldirish
-    try {
-      const saved = localStorage.getItem("sinabkor_user");
-      if (saved) {
-        const u = JSON.parse(saved);
-        if (u.name) {
-          setLoginIdentifier(u.name);
-        } else if (u.phone) {
-          setLoginIdentifier(u.phone);
-        }
-      }
-    } catch {}
   }, []);
+
+  const handleSwitchAccount = async () => {
+    try {
+      localStorage.removeItem("sinabkor_user");
+      sessionStorage.clear();
+    } catch {}
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    setCurrentLoggedInUser(null);
+    setLoginIdentifier("");
+    setLoginPassword("");
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,12 +56,8 @@ export default function AuthPage() {
     setAccountNotFound(false);
 
     try {
-      let clientBackup = null;
       try {
-        const saved = localStorage.getItem("sinabkor_user");
-        if (saved) {
-          clientBackup = JSON.parse(saved);
-        }
+        localStorage.removeItem("sinabkor_user");
       } catch {}
 
       const res = await fetch("/api/auth/login", {
@@ -68,10 +65,7 @@ export default function AuthPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           identifier: loginIdentifier.trim(),
-          phone: loginIdentifier.trim(),
-          name: loginIdentifier.trim(),
           password: loginPassword.trim(),
-          clientBackup,
         }),
       });
 
@@ -81,14 +75,10 @@ export default function AuthPage() {
           try {
             localStorage.setItem(
               "sinabkor_user",
-              JSON.stringify({
-                ...data.user,
-                password: loginPassword.trim(),
-              })
+              JSON.stringify(data.user)
             );
           } catch {}
         }
-        // Brauzer kuki va sessiyasini to'liq yuklash uchun window.location.href
         window.location.href = "/cabinet";
       } else {
         setError(data.error || "Tizimga kirishda xatolik yuz berdi");
@@ -109,6 +99,10 @@ export default function AuthPage() {
     setError("");
 
     try {
+      try {
+        localStorage.removeItem("sinabkor_user");
+      } catch {}
+
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,10 +121,7 @@ export default function AuthPage() {
           try {
             localStorage.setItem(
               "sinabkor_user",
-              JSON.stringify({
-                ...data.user,
-                password: regPassword.trim(),
-              })
+              JSON.stringify(data.user)
             );
           } catch {}
         }
@@ -162,6 +153,34 @@ export default function AuthPage() {
   return (
     <div className="max-w-md mx-auto px-4 py-16 sm:py-24">
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl">
+        {/* Hozirgi kirgan akkaunt haqida bildirishnoma */}
+        {currentLoggedInUser && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-stone-800 text-xs flex flex-col gap-2.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                <span>👤</span>
+                <span>Hozirgi hisob: <strong>{currentLoggedInUser.name}</strong></span>
+              </span>
+              <button
+                type="button"
+                onClick={handleSwitchAccount}
+                className="px-2.5 py-1 bg-white hover:bg-rose-50 hover:text-rose-600 text-stone-600 border border-stone-200 font-bold rounded-lg transition-colors text-[11px] cursor-pointer"
+              >
+                Chiqish (Almashtirish)
+              </button>
+            </div>
+            <div className="flex items-center justify-between pt-1 border-t border-amber-200/60">
+              <span className="text-stone-500 text-[11px]">Boshqa akkaunt bilan kirish uchun quyidan foydalaning:</span>
+              <Link
+                href="/cabinet"
+                className="text-amber-700 hover:text-amber-900 font-bold underline text-[11px]"
+              >
+                Kabinetga qaytish →
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Tab almashtirish */}
         <div className="flex rounded-2xl bg-slate-100 p-1 mb-6">
           <button

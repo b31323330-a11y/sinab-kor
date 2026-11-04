@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
+import { findUserInCloud, syncUserToDb, SyncedUser } from "@/lib/usersSync";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
       console.warn("DB login query warning:", e);
     }
 
-    // Agar topilmasa, bazadagi barcha foydalanuvchilar orasida solishtirish (SQLite case-insensitive qidiruv)
+    // SQLite case-insensitive qo'shimcha tekshirish
     if (candidates.length === 0) {
       try {
         const allUsers = await prisma.user.findMany({ take: 100 });
@@ -70,38 +71,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Agar yangi serverless konteyner bo'lsa, backup kukilar yoki clientBackup orqali tiklash
+    // 2. Agar lokal bazada bo'lmasa, Bulutli zaxiradan qidirish (Vercel serverless konteynerlar aro bog'lanish)
     if (candidates.length === 0) {
-      // Kukilarni tekshirish
+      try {
+        const cloudUser = await findUserInCloud(identifier);
+        if (cloudUser) {
+          candidates.push(cloudUser);
+          await syncUserToDb(cloudUser);
+        }
+      } catch (err) {
+        console.warn("Cloud user search warning:", err);
+      }
+    }
+
+    // 3. Agar hali ham topilmasa, aynan shu hisobga tegishli kuki zaxirasidan tekshirish
+    if (candidates.length === 0) {
       const safeName = encodeURIComponent(lowerIdentifier);
       const cookieVal =
         (hasDigits && last9.length >= 7 ? req.cookies.get(`auth_acc_${last9}`)?.value : null) ||
-        req.cookies.get(`auth_acc_name_${safeName}`)?.value ||
-        req.cookies.get("user_profile")?.value;
+        req.cookies.get(`auth_acc_name_${safeName}`)?.value;
 
       if (cookieVal) {
         try {
           const parsed = JSON.parse(Buffer.from(cookieVal, "base64").toString("utf-8"));
-          if (parsed && (parsed.name || parsed.phone)) {
+          const parsedName = (parsed?.name || "").trim().toLowerCase();
+          const parsedPhone = (parsed?.phone || "").replace(/[^\d]/g, "");
+          // Faqat kiritilgan identifikatorga aynan to'g'ri kelsagina qabul qilish
+          if (
+            parsedName === lowerIdentifier ||
+            (hasDigits && last9.length >= 7 && parsedPhone.includes(last9))
+          ) {
             candidates.push(parsed);
-            // Ushbu konteyner SQLite bazasiga qayta yozib qo'yish
-            try {
-              await prisma.user.create({
-                data: {
-                  id: parsed.id || `usr_${Date.now()}`,
-                  name: parsed.name,
-                  phone: parsed.phone || fullPhone,
-                  password: parsed.password || password,
-                  city: parsed.city || null,
-                  age: parsed.age || null,
-                },
-              });
-            } catch {}
+            await syncUserToDb(parsed);
           }
         } catch {}
       }
 
-      // Agar clientBackup yuborilgan bo'lsa
+      // Agar clientBackup aynan shu foydalanuvchiga tegishli bo'lsa
       if (candidates.length === 0 && body.clientBackup) {
         try {
           const cb = body.clientBackup;
@@ -112,24 +118,13 @@ export async function POST(req: NextRequest) {
             (hasDigits && last9.length >= 7 && cbPhone.includes(last9))
           ) {
             candidates.push(cb);
-            try {
-              await prisma.user.create({
-                data: {
-                  id: cb.id || `usr_${Date.now()}`,
-                  name: cb.name,
-                  phone: cb.phone || fullPhone,
-                  password: cb.password || password,
-                  city: cb.city || null,
-                  age: cb.age || null,
-                },
-              });
-            } catch {}
+            await syncUserToDb(cb);
           }
         } catch {}
       }
     }
 
-    // 3. Akkaunt topilmagan bo'lsa, aniq tushuntirish berish
+    // 4. Akkaunt topilmagan bo'lsa
     if (candidates.length === 0) {
       return NextResponse.json(
         {
@@ -141,7 +136,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Parolni tekshirish (bir nechta foydalanuvchi bo'lsa, paroli to'g'ri kelganini tanlash)
+    // 5. Parolni tekshirish
     const matchedUser = candidates.find((u) => u.password && u.password.trim() === password);
 
     if (!matchedUser) {
@@ -156,7 +151,7 @@ export async function POST(req: NextRequest) {
 
     const user = matchedUser;
 
-    // 5. Sessiya yaratish va tizimga kiritish
+    // 6. Sessiya yaratish va aynan shu kirgan foydalanuvchi ma'lumotlarini o'rnatish
     const token = crypto.randomUUID();
     try {
       await prisma.userSession.create({
