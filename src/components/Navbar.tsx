@@ -37,7 +37,6 @@ export function Navbar() {
     { href: "/ai-mentor", label: "✨ AI Maslahatchi" },
     { href: "/psy-tests", label: "🧠 Psixologik testlar" },
     { href: "/parents", label: "👨‍👩‍👧 Ota-onalar" },
-    { href: "/admin", label: uz.nav.admin },
   ];
 
   const isActive = (path: string) => {

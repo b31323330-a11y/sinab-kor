@@ -66,11 +66,6 @@ export function Footer() {
                   👤 Shaxsiy kabinet
                 </Link>
               </li>
-              <li>
-                <Link href="/admin" className="hover:text-amber-400 transition-colors">
-                  {uz.nav.admin}
-                </Link>
-              </li>
             </ul>
           </div>
 

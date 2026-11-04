@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { uz } from "@/content/uz";
-import { BoxIcon, ShieldCheckIcon } from "@/components/Icons";
+import { ShieldCheckIcon } from "@/components/Icons";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +19,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password: password.trim() }),
       });
 
       const data = await res.json();
@@ -31,8 +30,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin");
-      router.refresh();
+      window.location.href = "/admin";
     } catch {
       setError("Tarmoq xatosi. Qayta urinib ko’ring.");
       setLoading(false);
@@ -62,11 +60,20 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-              {uz.admin.passwordLabel}
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700">
+                {uz.admin.passwordLabel}
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-xs text-amber-600 hover:text-amber-700 font-semibold cursor-pointer"
+              >
+                {showPassword ? "Yashirish 🙈" : "Ko'rsatish 👁️"}
+              </button>
+            </div>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +85,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-xl bg-stone-900 hover:bg-amber-600 text-white text-sm font-black transition-all shadow-sm disabled:opacity-50"
+            className="w-full py-3.5 px-4 rounded-xl bg-stone-900 hover:bg-amber-600 text-white text-sm font-black transition-all shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {loading ? "Tekshirilmoqda..." : uz.admin.loginButton}
           </button>
@@ -87,4 +94,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
-
