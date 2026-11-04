@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isAdminAuthenticated } from "@/lib/auth";
+import { getMergedOrders, updateOrderStatusEverywhere } from "@/lib/ordersSync";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const isAuthed = await isAdminAuthenticated();
@@ -11,12 +14,8 @@ export async function GET() {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const [totalOrders, last30DaysOrders, leadsCount, quizCount, orders, leads] =
+    const [leadsCount, quizCount, localOrders, leads] =
       await Promise.all([
-        prisma.order.count(),
-        prisma.order.count({
-          where: { createdAt: { gte: thirtyDaysAgo } },
-        }),
         prisma.lead.count(),
         prisma.quizResult.count(),
         prisma.order.findMany({
@@ -27,6 +26,12 @@ export async function GET() {
           orderBy: { createdAt: "desc" },
         }),
       ]);
+
+    const orders = await getMergedOrders(localOrders);
+    const totalOrders = orders.length;
+    const last30DaysOrders = orders.filter(
+      (o: any) => new Date(o.createdAt).getTime() >= thirtyDaysAgo.getTime()
+    ).length;
 
     return NextResponse.json({
       stats: {
@@ -69,13 +74,9 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Noto’g’ri status" }, { status: 400 });
     }
 
-    const updated = await prisma.order.update({
-      where: { id: orderId },
-      data: { status },
-      include: { kit: true },
-    });
+    await updateOrderStatusEverywhere(orderId, status);
 
-    return NextResponse.json({ success: true, order: updated });
+    return NextResponse.json({ success: true, orderId, status });
   } catch (error) {
     console.error("Status update error:", error);
     return NextResponse.json(

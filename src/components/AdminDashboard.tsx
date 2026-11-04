@@ -93,12 +93,43 @@ export function AdminDashboard({
   initialKits = [],
 }: AdminDashboardProps) {
   const router = useRouter();
-  const [stats] = useState<StatsData>(initialStats);
+  const [stats, setStats] = useState<StatsData>(initialStats);
   const [orders, setOrders] = useState<OrderItem[]>(initialOrders);
   const [leads] = useState<LeadItem[]>(initialLeads);
   const [kits, setKits] = useState<KitItem[]>(initialKits);
   const [activeTab, setActiveTab] = useState<"orders" | "leads" | "kits">("orders");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const res = await fetch("/api/admin/orders");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.orders) setOrders(data.orders);
+        if (data.stats) setStats(data.stats);
+      }
+    } catch (e) {
+      console.error("Refresh error:", e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Har 20 soniyada buyurtmalarni avtomatik yangilab turish
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      fetch("/api/admin/orders")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.orders) setOrders(data.orders);
+          if (data?.stats) setStats(data.stats);
+        })
+        .catch(() => {});
+    }, 20000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Kit boshqaruvi modal holatlari
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -261,6 +292,16 @@ export function AdminDashboard({
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs font-bold hover:bg-stone-50 shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-60"
+            title="Buyurtmalarni yangilash"
+          >
+            <span className={refreshing ? "animate-spin" : ""}>🔄</span>
+            <span>{refreshing ? "Yangilanmoqda..." : "Yangilash"}</span>
+          </button>
+
           <a
             href="/api/admin/orders/export"
             download

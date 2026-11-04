@@ -4,6 +4,7 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { DEFAULT_KITS_DATA } from "@/data/defaultKits";
+import { getMergedOrders } from "@/lib/ordersSync";
 
 export const metadata: Metadata = {
   title: "Admin Panel",
@@ -29,12 +30,8 @@ export default async function AdminPage() {
   let kits: any[] = [];
 
   try {
-    const [tOrders, l30Orders, lCount, qCount, allOrders, allLeads, allKits] =
+    const [lCount, qCount, allOrders, allLeads, allKits] =
       await Promise.all([
-        prisma.order.count(),
-        prisma.order.count({
-          where: { createdAt: { gte: thirtyDaysAgo } },
-        }),
         prisma.lead.count(),
         prisma.quizResult.count(),
         prisma.order.findMany({
@@ -54,11 +51,16 @@ export default async function AdminPage() {
         }),
       ]);
 
-    totalOrders = tOrders;
-    last30DaysOrders = l30Orders;
+    // Barcha konteynerlar aro buyurtmalarni sinxronlashtirish
+    const mergedOrders = await getMergedOrders(allOrders);
+    orders = JSON.parse(JSON.stringify(mergedOrders));
+    totalOrders = orders.length;
+    last30DaysOrders = orders.filter(
+      (o: any) => new Date(o.createdAt).getTime() >= thirtyDaysAgo.getTime()
+    ).length;
+
     leadsCount = lCount;
     quizCount = qCount;
-    orders = JSON.parse(JSON.stringify(allOrders));
     leads = JSON.parse(JSON.stringify(allLeads));
     kits = JSON.parse(JSON.stringify(allKits));
 

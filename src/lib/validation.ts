@@ -5,6 +5,10 @@ import { z } from "zod";
  * E.g. "+998 (90) 123-45-67" -> "+998901234567"
  */
 export function normalizePhone(raw: string): string {
+  const digits = raw.replace(/[^\d]/g, "");
+  if (digits.length >= 9) {
+    return `+998${digits.slice(-9)}`;
+  }
   const cleaned = raw.replace(/[^\d+]/g, "").trim();
   if (cleaned.startsWith("998") && !cleaned.startsWith("+")) {
     return `+${cleaned}`;

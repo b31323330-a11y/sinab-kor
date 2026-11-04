@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { uz } from "@/content/uz";
+import { getMergedOrders } from "@/lib/ordersSync";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const isAuthed = await isAdminAuthenticated();
@@ -10,10 +13,12 @@ export async function GET() {
   }
 
   try {
-    const orders = await prisma.order.findMany({
+    const localOrders = await prisma.order.findMany({
       include: { kit: true },
       orderBy: { createdAt: "desc" },
     });
+
+    const orders = await getMergedOrders(localOrders);
 
     const statusTranslations: Record<string, string> = {
       PENDING: uz.admin.statuses.PENDING,
